@@ -25,10 +25,16 @@ class AuthController extends AbstractController
         $user->setPassword($encoder->encodePassword($user, $password));
         $user->setEmail($email);
         $em = $this->getDoctrine()->getManager();
+        $payload = [
+            "user" => $user->getUsername(),
+            "exp"  => (new \DateTime())->modify("+5 minutes")->getTimestamp(),
+        ];
+        $user->setApiToken(JWT::encode($payload, $this->getParameter('jwt_secret'), 'HS256'));
         $em->persist($user);
         $em->flush();
         return $this->json([
-            'user' => $user->getEmail()
+            'user' => $user->getEmail(),
+            'api_token' =>$user->getApiToken()
         ]);
     }
 
@@ -50,11 +56,9 @@ class AuthController extends AbstractController
             "exp"  => (new \DateTime())->modify("+5 minutes")->getTimestamp(),
         ];
 
-
-        $jwt = JWT::encode($payload, $this->getParameter('jwt_secret'), 'HS256');
         return $this->json([
             'message' => 'success!',
-            'token' => sprintf('Bearer %s', $jwt),
+            'token' => $user->getApiToken(),
         ]);
     }
 

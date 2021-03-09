@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
@@ -20,9 +21,13 @@ class ApiController extends AbstractController
     private $objectManager;
     public function __construct(EntityManagerInterface $objectManager, RequestStack $request){
         $apiToken = $request->getCurrentRequest()->headers->get('api_token');
-        $user = $this->objectManager->getRepository(User::class)->findOneBy([
-            'apiKey' => $apiToken,
+        $user = $objectManager->getRepository(User::class)->findOneBy([
+            'api_token' => $apiToken,
         ]);
+
+        if(!$user instanceof User){
+            throw new HttpException(401, 'Unauthorized');
+        }
     }
 
     public function index(): Response
