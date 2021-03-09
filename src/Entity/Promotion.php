@@ -24,15 +24,16 @@ class Promotion
      */
     private $start;
 
-    /**
-     * @ORM\Column(type="date")
-     */
-    private $exit;
 
     /**
      * @ORM\OneToMany(targetEntity=Student::class, mappedBy="promotion")
      */
     private $students;
+
+    /**
+     * @ORM\Column(type="date")
+     */
+    private $date_exit;
 
     public function __construct()
     {
@@ -56,14 +57,14 @@ class Promotion
         return $this;
     }
 
-    public function getExit(): ?\DateTimeInterface
+    public function getDateExit(): ?\DateTimeInterface
     {
-        return $this->exit;
+        return $this->date_exit;
     }
 
-    public function setExit(\DateTimeInterface $exit): self
+    public function setDateExit(\DateTimeInterface $date_exit): self
     {
-        $this->exit = $exit;
+        $this->date_exit = $date_exit;
 
         return $this;
     }

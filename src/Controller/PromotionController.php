@@ -26,29 +26,6 @@ class PromotionController extends AbstractController
     }
 
     /**
-     * @Route("/new", name="promotion_new", methods={"GET","POST"})
-     */
-    public function new(Request $request): Response
-    {
-        $promotion = new Promotion();
-        $form = $this->createForm(PromotionType::class, $promotion);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($promotion);
-            $entityManager->flush();
-
-            return $this->redirectToRoute('promotion_index');
-        }
-
-        return $this->render('promotion/new.html.twig', [
-            'promotion' => $promotion,
-            'form' => $form->createView(),
-        ]);
-    }
-
-    /**
      * @Route("/{id}", name="promotion_show", methods={"GET"})
      */
     public function show(Promotion $promotion): Response
@@ -68,7 +45,6 @@ class PromotionController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->getDoctrine()->getManager()->flush();
-
             return $this->redirectToRoute('promotion_index');
         }
 
