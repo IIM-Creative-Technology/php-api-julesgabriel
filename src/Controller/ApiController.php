@@ -29,14 +29,12 @@ use Symfony\Component\Routing\Annotation\Route;
 class ApiController extends AbstractController
 {
     private $objectManager;
-
     public function __construct(EntityManagerInterface $objectManager, RequestStack $request)
     {
         $apiToken = $request->getCurrentRequest()->headers->get('api_token');
         $user = $objectManager->getRepository(User::class)->findOneBy([
             'api_token' => $apiToken,
         ]);
-
         if (!$user instanceof User) {
             throw new HttpException(401, 'Unauthorized');
         }
@@ -60,69 +58,11 @@ class ApiController extends AbstractController
     }
 
     /**
-     * @Route("/mark", name="mark_findAll", methods={"GET"})
-     * @param MarkRepository $markRepository
-     * @return Response
+     * @Route("/promotion/{id}", name="promotion_show", methods={"GET"})
      */
-
-    public function findAllMarks(MarkRepository $markRepository): Response
+    public function promotionFindOneBy(PromotionRepository $promotionRepository, $id): Response
     {
-        return $this->findAllElement($markRepository);
-    }
-
-    /**
-     * @Route("/student", name="student_findAll", methods={"GET"})
-     * @param StudentRepository $studentRepository
-     * @return Response
-     */
-
-    public function findAllStudent(StudentRepository $studentRepository): Response
-    {
-        return $this->findAllElement($studentRepository);
-    }
-
-    /**
-     * @Route("/teacher", name="teacher_findAll", methods={"GET"})
-     * @param TeacherRepository $teacherRepository
-     * @return Response
-     */
-
-    public function findAllTeacher(TeacherRepository $teacherRepository): Response
-    {
-        return $this->findAllElement($teacherRepository);
-    }
-
-    /**
-     * @Route("/lesson", name="lesson_findAll", methods={"GET"})
-     * @param LessonRepository $lessonRepository
-     * @return Response
-     */
-
-    public function findAllLesson(LessonRepository $lessonRepository): Response
-    {
-        return $this->findAllElement($lessonRepository);
-    }
-
-    /**
-     * @Route("/classroom", name="classroom_findAll", methods={"GET"})
-     * @param ClassroomRepository $classroomRepository
-     * @return Response
-     */
-
-    public function findAllClassroom(ClassroomRepository $classroomRepository): Response
-    {
-        return $this->findAllElement($classroomRepository);
-    }
-
-    /**
-     * @Route("/user", name="user_findAll", methods={"GET"})
-     * @param UserRepository $userRepository
-     * @return Response
-     */
-
-    public function findAllUser(UserRepository $userRepository): Response
-    {
-        return $this->findAllElement($userRepository);
+        return $this->findOneByElement($promotionRepository, $id);
     }
 
     /**
@@ -130,7 +70,7 @@ class ApiController extends AbstractController
      */
     public function newPromotion(Request $request): Response
     {
-        $start = $request->get('start');
+        $start = $request->get('date_start');
         $exit = $request->get('date_exit');
         $promotion = new Promotion();
         $promotion->setStart(new \DateTime($start));
@@ -146,57 +86,74 @@ class ApiController extends AbstractController
     }
 
     /**
-     * @Route("/student/new", name="student_new", methods={"GET","POST"})
+     * @Route("/promotion/{id}", name="promotion_delete", methods={"DELETE"})
+     * @param Request $request
+     * @param Promotion $promotion
+     * @param $id
+     * @return Response
      */
-    public function newStudent(Request $request): Response
+
+    public function deletePromotion(Request $request, Promotion $promotion, $id): Response
     {
-        $firstName = $request->get('first_name');
-        $lastName = $request->get('last_name');
-        $age = $request->get('age');
-        $date = $request->get('arrived_date');
-        $student = new Student();
-        $student->setFirstName($firstName);
-        $student->setLastName($lastName);
-        $student->setAge($age);
-        $student->setArrivedDate(new \DateTime($date));
-        $em = $this->getDoctrine()->getManager();
-        $em->persist($student);
-        $em->flush();
+        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager->remove($promotion);
+        $entityManager->flush();
         return $this->json([
-            'success' => "YES",
-            'first_name' => $student->getFirstName(),
-            'last_name' => $student->getLastName()
+            'success' => "Promotion with id: " . $id . " successfully deleted",
         ]);
     }
 
-    public function findOneByElement($arg, $id)
+    /**
+     * @Route("/promotion/edit/{id}", name="promotion_edit", methods={"GET","PUT"})
+     * @param Request $request
+     * @param Promotion $promotion
+     * @param $id
+     * @param PromotionRepository $promotionRepository
+     * @return Response
+     */
+
+    public function editPromotion(Request $request, Promotion $promotion, $id, PromotionRepository $promotionRepository): Response
     {
-        $element = $arg->find($id);
-        return $this->json($element);
+        $element = $promotionRepository->find($id);
+        $element->setStart(new \DateTime($request->get('date_start')));
+        $element->setDateExit(new \DateTime($request->get('date_exit')));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($element);
+        $em->flush();
+        return $this->json([
+            'success' => "Success !"
+        ]);
     }
 
     /**
-     * @Route("/promotion/{id}", name="promotion_show", methods={"GET"})
+     * @Route("/mark", name="mark_findAll", methods={"GET"})
+     * @param MarkRepository $markRepository
+     * @return Response
      */
-    public function promotionFindOneBy(PromotionRepository $promotionRepository, $id): Response
+
+    public function findAllMarks(MarkRepository $markRepository): Response
     {
-        return $this->findOneByElement($promotionRepository, $id);
+        return $this->findAllElement($markRepository);
     }
 
     /**
-     * @Route("/user/{id}", name="user_show", methods={"GET"})
+     * @Route("/mark/{id}", name="mark_show", methods={"GET"})
      */
-    public function userFindOneBy(UserRepository $userRepository, $id): Response
+
+    public function markFindOneBy(MarkRepository $markRepository, $id): Response
     {
-        return $this->findOneByElement($userRepository, $id);
+        return $this->findOneByElement($markRepository, $id);
     }
 
     /**
-     * @Route("/teacher/{id}", name="teacher_show", methods={"GET"})
+     * @Route("/student", name="student_findAll", methods={"GET"})
+     * @param StudentRepository $studentRepository
+     * @return Response
      */
-    public function teacherFindOneBy(TeacherRepository $teacherRepository, $id): Response
+
+    public function findAllStudent(StudentRepository $studentRepository): Response
     {
-        return $this->findOneByElement($teacherRepository, $id);
+        return $this->findAllElement($studentRepository);
     }
 
     /**
@@ -208,11 +165,89 @@ class ApiController extends AbstractController
     }
 
     /**
-     * @Route("/mark/{id}", name="mark_show", methods={"GET"})
+     * @Route("/student/new", name="student_new", methods={"GET","POST"})
      */
-    public function markFindOneBy(MarkRepository $markRepository, $id): Response
+    public function newStudent(Request $request, PromotionRepository $promotionRepository): Response
     {
-        return $this->findOneByElement($markRepository, $id);
+        $firstName = $request->get('first_name');
+        $lastName = $request->get('last_name');
+        $age = $request->get('age');
+        $date = $request->get('arrived_date');
+        $idPromotion = $request->get('promotion');
+        $student = new Student();
+        $student->setFirstName($firstName);
+        $student->setLastName($lastName);
+        $student->setAge($age);
+        $student->setPromotion($promotionRepository->find($idPromotion));
+        $student->setArrivedDate(new \DateTime($date));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($student);
+        $em->flush();
+        return $this->json([
+            'success' => "YES",
+            'first_name' => $student->getFirstName(),
+            'last_name' => $student->getLastName()
+        ]);
+    }
+
+    /**
+     * @Route("/teacher", name="teacher_findAll", methods={"GET"})
+     * @param TeacherRepository $teacherRepository
+     * @return Response
+     */
+
+    public function findAllTeacher(TeacherRepository $teacherRepository): Response
+    {
+        return $this->findAllElement($teacherRepository);
+    }
+
+    /**
+     * @Route("/teacher/{id}", name="teacher_show", methods={"GET"})
+     */
+    public function teacherFindOneBy(TeacherRepository $teacherRepository, $id): Response
+    {
+        return $this->findOneByElement($teacherRepository, $id);
+    }
+
+
+
+
+
+    /**
+     * @Route("/user", name="user_findAll", methods={"GET"})
+     * @param UserRepository $userRepository
+     * @return Response
+     */
+
+    public function findAllUser(UserRepository $userRepository): Response
+    {
+        return $this->findAllElement($userRepository);
+    }
+
+
+    public function findOneByElement($arg, $id)
+    {
+        $element = $arg->find($id);
+        return $this->json($element);
+    }
+
+    /**
+     * @Route("/user/{id}", name="user_show", methods={"GET"})
+     */
+    public function userFindOneBy(UserRepository $userRepository, $id): Response
+    {
+        return $this->findOneByElement($userRepository, $id);
+    }
+
+    /**
+     * @Route("/lesson", name="lesson_findAll", methods={"GET"})
+     * @param LessonRepository $lessonRepository
+     * @return Response
+     */
+
+    public function findAllLesson(LessonRepository $lessonRepository): Response
+    {
+        return $this->findAllElement($lessonRepository);
     }
 
     /**
@@ -221,6 +256,17 @@ class ApiController extends AbstractController
     public function lessonFindOneBy(LessonRepository $lessonRepository, $id): Response
     {
         return $this->findOneByElement($lessonRepository, $id);
+    }
+
+    /**
+     * @Route("/classroom", name="classroom_findAll", methods={"GET"})
+     * @param ClassroomRepository $classroomRepository
+     * @return Response
+     */
+
+    public function findAllClassroom(ClassroomRepository $classroomRepository): Response
+    {
+        return $this->findAllElement($classroomRepository);
     }
 
     /**

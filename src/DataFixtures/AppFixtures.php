@@ -9,13 +9,22 @@ use App\Entity\Promotion;
 use App\Entity\Student;
 use App\Entity\Teacher;
 use App\Entity\User;
+use App\Repository\PromotionRepository;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Firebase\JWT\JWT;
+use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 class AppFixtures extends Fixture
 {
+    private $params;
+    private $promotionRepository;
+    public function __construct(ContainerBagInterface $params , PromotionRepository $promotionRepository){
+        $this->params = $params;
+        $this->promotionRepository = $promotionRepository;
+    }
+
     public function load(ObjectManager $manager)
     {
 
@@ -42,20 +51,18 @@ class AppFixtures extends Fixture
             $classroom->setLabel("Promo 2023");
             $classroom->setDateEnd(new \DateTime("2023-04-11"));
             $manager->persist($classroom);
-
         }
-
 
         $promotion = new Promotion();
         $promotion->setStart(new \DateTime('2018-03-11'));
         $promotion->setDateExit(new \DateTime('2023-03-11'));
         $manager->persist($promotion);
 
-
         $student = new Student();
         $student->setFirstName("Jules");
         $student->setLastName("DAYAUX");
         $student->setArrivedDate(new \DateTime('2018-03-11'));
+        $student->setPromotion($this->promotionRepository->find(1));
         $student->setAge(23);
         $manager->persist($student);
 
@@ -66,7 +73,7 @@ class AppFixtures extends Fixture
             "user" => $user->getUsername(),
             "exp" => (new \DateTime())->modify("+5 minutes")->getTimestamp(),
         ];
-        $user->setApiToken("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoianVsZXNAbWFpbC5jb20iLCJleHAiOjE2MTUzMDAyODl9.baDGsLMJant4TZHDS6Il0vjnqrhOoXNePhm-IMq1tDI");
+        $user->setApiToken(JWT::encode($payload, $this->params->get('jwt_secret'), 'HS256'));
         $user->setRoles(["ROLE_USER"]);
         $manager->persist($user);
 

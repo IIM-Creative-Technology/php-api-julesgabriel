@@ -13,7 +13,7 @@ class PromotionType extends AbstractType
     {
         $builder
             ->add('start')
-            ->add('exit')
+            ->add('date_exit')
         ;
     }
 
