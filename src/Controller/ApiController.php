@@ -2,8 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Classroom;
+use App\Entity\Lesson;
+use App\Entity\Mark;
 use App\Entity\Promotion;
 use App\Entity\Student;
+use App\Entity\Teacher;
 use App\Entity\User;
 use App\Form\PromotionType;
 use App\Repository\ClassroomRepository;
@@ -46,6 +50,22 @@ class ApiController extends AbstractController
         return $this->json($elements);
     }
 
+    public function findOneByElement($arg, $id)
+    {
+        $element = $arg->find($id);
+        return $this->json($element);
+    }
+
+    public function deleteElement($arg, $id){
+        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager->remove($arg);
+        $entityManager->flush();
+        return $this->json([
+            'success' => "Promotion with id: " . $id . " successfully deleted",
+        ]);
+    }
+
+
     /**
      * @Route("/promotion", name="promotion_findAll", methods={"GET"})
      * @param PromotionRepository $promotionRepository
@@ -67,6 +87,9 @@ class ApiController extends AbstractController
 
     /**
      * @Route("/promotion/new", name="promotion_new", methods={"GET","POST"})
+     * @param Request $request
+     * @return Response
+     * @throws \Exception
      */
     public function newPromotion(Request $request): Response
     {
@@ -87,20 +110,14 @@ class ApiController extends AbstractController
 
     /**
      * @Route("/promotion/{id}", name="promotion_delete", methods={"DELETE"})
-     * @param Request $request
      * @param Promotion $promotion
      * @param $id
      * @return Response
      */
 
-    public function deletePromotion(Request $request, Promotion $promotion, $id): Response
+    public function deletePromotion(Promotion $promotion, $id): Response
     {
-        $entityManager = $this->getDoctrine()->getManager();
-        $entityManager->remove($promotion);
-        $entityManager->flush();
-        return $this->json([
-            'success' => "Promotion with id: " . $id . " successfully deleted",
-        ]);
+        return $this->deleteElement($promotion, $id);
     }
 
     /**
@@ -146,6 +163,38 @@ class ApiController extends AbstractController
     }
 
     /**
+     * @Route("/mark/edit/{id}", name="promotion_edit", methods={"GET","PUT"})
+     * @param Request $request
+     * @param $id
+     * @param MarkRepository $markRepository
+     * @return Response
+     */
+
+    public function editMark(Request $request, $id, MarkRepository $markRepository): Response
+    {
+        $element = $markRepository->find($id);
+        $element->setValue($request->get('value'));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($element);
+        $em->flush();
+        return $this->json([
+            'success' => "Success !"
+        ]);
+    }
+
+    /**
+     * @Route("/mark/{id}", name="mark_delete", methods={"DELETE"})
+     * @param Mark $mark
+     * @param $id
+     * @return Response
+     */
+
+    public function deleteMark(Mark $mark, $id): Response
+    {
+        return $this->deleteElement($mark, $id);
+    }
+
+    /**
      * @Route("/student", name="student_findAll", methods={"GET"})
      * @param StudentRepository $studentRepository
      * @return Response
@@ -166,6 +215,10 @@ class ApiController extends AbstractController
 
     /**
      * @Route("/student/new", name="student_new", methods={"GET","POST"})
+     * @param Request $request
+     * @param PromotionRepository $promotionRepository
+     * @return Response
+     * @throws \Exception
      */
     public function newStudent(Request $request, PromotionRepository $promotionRepository): Response
     {
@@ -191,6 +244,40 @@ class ApiController extends AbstractController
     }
 
     /**
+     * @Route("/student/edit/{id}", name="student_edit", methods={"GET","PUT"})
+     * @param Request $request
+     * @param $id
+     * @param MarkRepository $markRepository
+     * @return Response
+     */
+
+    public function editStudent(Request $request, $id, StudentRepository $studentRepository): Response
+    {
+        $element = $studentRepository->find($id);
+        $element->setFirstName($request->get('first_name'));
+        $element->setLastName($request->get('last_name'));
+        $element->setClassroom($request->get('classroom'));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($element);
+        $em->flush();
+        return $this->json([
+            'success' => "Success !"
+        ]);
+    }
+
+    /**
+     * @Route("/student/{id}", name="student_delete", methods={"DELETE"})
+     * @param Mark $mark
+     * @param $id
+     * @return Response
+     */
+
+    public function deleteStudent(Student $student, $id): Response
+    {
+        return $this->deleteElement($student, $id);
+    }
+
+    /**
      * @Route("/teacher", name="teacher_findAll", methods={"GET"})
      * @param TeacherRepository $teacherRepository
      * @return Response
@@ -209,8 +296,66 @@ class ApiController extends AbstractController
         return $this->findOneByElement($teacherRepository, $id);
     }
 
+    /**
+     * @Route("/teacher/new", name="teacher_new", methods={"GET","POST"})
+     * @param Request $request
+     * @param LessonRepository $lessonRepository
+     * @return Response
+     * @throws \Exception
+     */
+    public function newTeacher(Request $request, LessonRepository $lessonRepository): Response
+    {
+        $firstName = $request->get('first_name');
+        $lastName = $request->get('last_name');
+        $lesson = $request->get('lesson');
+        $date = $request->get('arrived_date');
+        $teacher = new Teacher();
+        $teacher->setFirstName($firstName);
+        $teacher->setLastName($lastName);
+        $teacher->setArrivedDate(new \DateTime($date));
+        $teacher->addLesson($lessonRepository->find($lesson));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($teacher);
+        $em->flush();
+        return $this->json([
+            'success' => "YES",
+            'first_name' => $teacher->getFirstName(),
+            'last_name' => $teacher->getLastName()
+        ]);
+    }
 
+    /**
+     * @Route("/teacher/edit/{id}", name="student_edit", methods={"GET","PUT"})
+     * @param Request $request
+     * @param $id
+     * @param TeacherRepository $teacherRepository
+     * @return Response
+     */
 
+    public function editTeacher(Request $request, $id, TeacherRepository $teacherRepository): Response
+    {
+        $element = $teacherRepository->find($id);
+        $element->setFirstName($request->get('first_name'));
+        $element->setLastName($request->get('last_name'));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($element);
+        $em->flush();
+        return $this->json([
+            'success' => "Success !"
+        ]);
+    }
+
+    /**
+     * @Route("/teacher/{id}", name="student_delete", methods={"DELETE"})
+     * @param Teacher $teacher
+     * @param $id
+     * @return Response
+     */
+
+    public function deleteTeacher(Teacher $teacher, $id): Response
+    {
+        return $this->deleteElement($teacher, $id);
+    }
 
 
     /**
@@ -224,19 +369,48 @@ class ApiController extends AbstractController
         return $this->findAllElement($userRepository);
     }
 
-
-    public function findOneByElement($arg, $id)
-    {
-        $element = $arg->find($id);
-        return $this->json($element);
-    }
-
     /**
      * @Route("/user/{id}", name="user_show", methods={"GET"})
+     * @param UserRepository $userRepository
+     * @param $id
+     * @return Response
      */
     public function userFindOneBy(UserRepository $userRepository, $id): Response
     {
         return $this->findOneByElement($userRepository, $id);
+    }
+
+    /**
+     * @Route("/user/edit/{id}", name="user_edit", methods={"GET","PUT"})
+     * @param Request $request
+     * @param $id
+     * @param TeacherRepository $teacherRepository
+     * @return Response
+     */
+
+    public function editUser(Request $request, $id, UserRepository $userRepository): Response
+    {
+        $element = $userRepository->find($id);
+        $element->setEmail($request->get('first_name'));
+        $element->setPassword($request->get('last_name'));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($element);
+        $em->flush();
+        return $this->json([
+            'success' => "Success !"
+        ]);
+    }
+
+    /**
+     * @Route("/user/{id}", name="user_delete", methods={"DELETE"})
+     * @param User $user
+     * @param $id
+     * @return Response
+     */
+
+    public function deleteUser(User $user, $id): Response
+    {
+        return $this->deleteElement($user, $id);
     }
 
     /**
@@ -259,6 +433,69 @@ class ApiController extends AbstractController
     }
 
     /**
+     * @Route("/lesson/new", name="lesson_new", methods={"GET","POST"})
+     * @param Request $request
+     * @param LessonRepository $lessonRepository
+     * @param TeacherRepository $teacherRepository
+     * @param ClassroomRepository $classroomRepository
+     * @return Response
+     * @throws \Exception
+     */
+    public function newLesson(Request $request, LessonRepository $lessonRepository, TeacherRepository $teacherRepository, ClassroomRepository $classroomRepository): Response
+    {
+        $lesson = new Lesson();
+        $lesson->setTitle($request->get('title'));
+        $lesson->setTeacher($teacherRepository->find($request->get('teacher')));
+        $lesson->setClassroom($classroomRepository->find($request->get('classroom')));
+        $lesson->setStartDate(new \DateTime($request->get('start_date')));
+        $lesson->setEndDate(new \DateTime($request->get('end_date')));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($lesson);
+        $em->flush();
+        return $this->json([
+            'success' => "YES",
+            'title' => $lesson->getTitle(),
+            'last_name' => $lesson->getClassroom()
+        ]);
+    }
+
+    /**
+     * @Route("/lesson/edit/{id}", name="student_edit", methods={"GET","PUT"})
+     * @param Request $request
+     * @param $id
+     * @param LessonRepository $lessonRepository
+     * @return Response
+     */
+
+    public function editLesson(Request $request, $id, LessonRepository $lessonRepository, TeacherRepository $teacherRepository, ClassroomRepository $classroomRepository): Response
+    {
+        $element = $lessonRepository->find($id);
+        $element->setTitle($request->get('title'));
+        $element->setTeacher($teacherRepository->find($request->get('teacher')));
+        $element->setClassroom($classroomRepository->find($request->get('classroom')));
+        $element->setStartDate(new \DateTime($request->get('start_date')));
+        $element->setEndDate(new \DateTime($request->get('end_date')));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($element);
+        $em->flush();
+        return $this->json([
+            'success' => "Success !"
+        ]);
+    }
+
+    /**
+     * @Route("/lesson/{id}", name="student_delete", methods={"DELETE"})
+     * @param Lesson $lesson
+     * @param $id
+     * @return Response
+     */
+
+    public function deleteLesson(Lesson $lesson, $id): Response
+    {
+        return $this->deleteElement($lesson, $id);
+    }
+
+    /**
      * @Route("/classroom", name="classroom_findAll", methods={"GET"})
      * @param ClassroomRepository $classroomRepository
      * @return Response
@@ -275,6 +512,69 @@ class ApiController extends AbstractController
     public function classroomFindOneBy(ClassroomRepository $classroomRepository, $id): Response
     {
         return $this->findOneByElement($classroomRepository, $id);
+    }
+
+    /**
+     * @Route("/classroom/new", name="lesson_new", methods={"GET","POST"})
+     * @param Request $request
+     * @param LessonRepository $lessonRepository
+     * @param StudentRepository $studentRepository
+     * @param ClassroomRepository $classroomRepository
+     * @return Response
+     * @throws \Exception
+     */
+    public function newClassroom(Request $request, LessonRepository $lessonRepository, StudentRepository $studentRepository): Response
+    {
+        $classroom = new Classroom();
+        $classroom->setLabel($request->get('title'));
+        $classroom->setDateEnd(new \DateTime($request->get('date_end')));
+        $classroom->addLesson($lessonRepository->find($request->get('lesson')));
+        $classroom->addStudent($studentRepository->find($request->get('student')));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($classroom);
+        $em->flush();
+        return $this->json([
+            'success' => "YES",
+            'title' => $classroom->getLabel(),
+        ]);
+    }
+
+    /**
+     * @Route("/classroom/edit/{id}", name="student_edit", methods={"GET","PUT"})
+     * @param Request $request
+     * @param $id
+     * @param LessonRepository $lessonRepository
+     * @param StudentRepository $studentRepository
+     * @param ClassroomRepository $classroomRepository
+     * @return Response
+     * @throws \Exception
+     */
+
+    public function editClassroom(Request $request, $id, LessonRepository $lessonRepository, StudentRepository $studentRepository, ClassroomRepository $classroomRepository): Response
+    {
+        $element = $classroomRepository->find($id);
+        $element->setLabel($request->get('title'));
+        $element->setDateEnd(new \DateTime($request->get('date_end')));
+        $element->addLesson($lessonRepository->find($request->get('lesson')));
+        $element->addStudent($studentRepository->find($request->get('student')));
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($element);
+        $em->flush();
+        return $this->json([
+            'success' => "Success !"
+        ]);
+    }
+
+    /**
+     * @Route("/classroom/{id}", name="student_delete", methods={"DELETE"})
+     * @param Classroom $classroom
+     * @param $id
+     * @return Response
+     */
+
+    public function deleteClassroom(Classroom $classroom, $id): Response
+    {
+        return $this->deleteElement($classroom, $id);
     }
 }
 
